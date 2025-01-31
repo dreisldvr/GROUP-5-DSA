@@ -9,7 +9,7 @@ Before proceeding, ensure the following are installed on your system:
 - **Python** 
 - **pip**
 
-To check if Python and pip are installed, run the folloeing commands:
+To check if Python and pip are installed, run the following commands:
 
   ```bash
   python --version
@@ -32,4 +32,4 @@ Follow these steps to start the website:
    http://127.0.0.1:5000/
    ```
 
-## Happy coding!
+### Happy coding!
