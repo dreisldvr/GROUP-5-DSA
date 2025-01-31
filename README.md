@@ -9,6 +9,8 @@ Before proceeding, ensure the following are installed on your system:
 - **Python** 
 - **pip**
 
+To check if Python and pip are installed, run the folloeing commands:
+
   ```bash
   python --version
   pip --version
