@@ -9,6 +9,11 @@ Before proceeding, ensure the following are installed on your system:
 - **Python** 
 - **pip**
 
+  ```bash
+  python --version
+  pip --version
+  ```
+
 ## Running the Website
 
 Follow these steps to start the website:
