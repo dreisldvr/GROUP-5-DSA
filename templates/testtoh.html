@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dynamic Rectangle Swap</title>
+  <style>
+    .container {
+      position: relative;
+      width: 90%; /* Flexible width for responsiveness */
+      height: 300px; /* Fixed height */
+      margin: 20px auto;
+      border: 1px solid #ddd;
+      overflow: hidden;
+    }
+    .rectangle {
+      position: absolute;
+      transition: transform 0.5s ease-in-out;
+    }
+    .rectangle:nth-child(odd) {
+      background-color: lightblue;
+    }
+    .rectangle:nth-child(even) {
+      background-color: lightcoral;
+    }
+    .controls {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="controls">
+    <label for="rectangleCount">Number of Rectangles:</label>
+    <input type="number" id="rectangleCount" value="6" min="2" max="20">
+    <button onclick="generateRectangles()">Generate Rectangles</button>
+    <button onclick="swapRectangles()">Swap Rectangles</button>
+  </div>
+
+  <div class="container" id="rectangleContainer"></div>
+
+  <script>
+    const container = document.getElementById('rectangleContainer');
+    let isSwapped = false; // Tracks current state of rectangles
+
+    // Function to generate rectangles based on user input
+    function generateRectangles() {
+      const rectangleCount = parseInt(document.getElementById('rectangleCount').value);
+      container.innerHTML = ''; // Clear existing rectangles
+
+      const containerWidth = container.offsetWidth;
+      const rectangleWidth = containerWidth / rectangleCount; // Calculate dynamic width
+      const rectangleHeight = 100; // Fixed height for rectangles
+
+      for (let i = 0; i < rectangleCount; i++) {
+        const rect = document.createElement('div');
+        rect.classList.add('rectangle');
+        rect.style.width = `${rectangleWidth}px`; // Set width dynamically
+        rect.style.height = `${rectangleHeight}px`; // Fixed height
+        rect.style.left = `${i * rectangleWidth}px`; // Space rectangles evenly
+        container.appendChild(rect);
+      }
+
+      // Reset swapped state when rectangles are regenerated
+      isSwapped = false;
+    }
+
+    // Function to swap rectangles
+    function swapRectangles() {
+      const rectangles = document.querySelectorAll('.rectangle');
+      const rectangleCount = rectangles.length;
+
+      rectangles.forEach((rect, index) => {
+        const horizontalShift = (rectangleCount - 1 - index) * rect.offsetWidth; // Calculate horizontal shift
+        const distance = 100; // Vertical movement
+
+        if (!isSwapped) {
+          // Move down and swap horizontally
+          setTimeout(() => {
+            rect.style.transform = `translateY(${distance}px)`;
+          }, index * 100);
+
+          setTimeout(() => {
+            rect.style.transform = `translateY(${distance}px) translateX(${horizontalShift - parseInt(rect.style.left)}px)`;
+          }, (index * 100) + 500);
+
+          setTimeout(() => {
+            rect.style.transform = `translateY(0) translateX(${horizontalShift - parseInt(rect.style.left)}px)`;
+          }, (index * 100) + 1000);
+        } else {
+          // Reverse movement to original positions
+          setTimeout(() => {
+            rect.style.transform = `translateY(${distance}px) translateX(${horizontalShift - parseInt(rect.style.left)}px)`;
+          }, index * 100);
+
+          setTimeout(() => {
+            rect.style.transform = `translateY(${distance}px)`;
+          }, (index * 100) + 500);
+
+          setTimeout(() => {
+            rect.style.transform = 'translateY(0)';
+          }, (index * 100) + 1000);
+        }
+      });
+
+      // Toggle the state
+      isSwapped = !isSwapped;
+    }
+
+    // Generate initial rectangles
+    generateRectangles();
+  </script>
+</body>
+</html>

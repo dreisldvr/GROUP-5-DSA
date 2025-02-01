@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Merge Sort Visualizer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+            overflow-y: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            padding-left: 220px;
+        }
+
+        .main-container {
+            display: flex;
+            width: 80%;
+            justify-content: center;
+            align-items: flex-end;
+            height: 80%;
+        }
+
+        #left-container {
+            width: 250px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-right: 20px;
+            position: fixed;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            border: 2px solid #ccc;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+
+        #visualizer-container {
+            width: 700px;
+            height: 80%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-right: 350px;
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            border: 2px solid #ccc;
+            padding: 10px;
+            background-color: #f9f9f9;
+            overflow: hidden;
+        }
+
+        #visualizer {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            height: 100%;
+            width: auto;
+            position: relative;
+            padding: 0 10px;
+            margin-bottom: 300px;
+        }
+
+        .bar {
+            width: 20px;
+            margin: 0 2px;
+            background-color: #4CAF50;
+            transition: transform 0.5s, height 0.5s;
+            position: relative;
+        }
+
+        .bar-text {
+            position: top;
+            bottom: 5px; /* Adjust this value based on your preference */
+            width: 100%;
+            text-align: left;
+            color: white;
+            font-weight: bold;
+            font-size: 14px; /* Adjust the font size as needed */
+        }
+
+
+        #right-container {
+            width: 400px;
+            height: 80%;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            margin-left: 20px;
+            position: fixed;
+            right: 100px;
+            border: 2px solid #ccc;
+            padding: 10px;
+            background-color: #f9f9f9;
+            overflow-y: auto; /* Enables scrolling */
+        }
+
+        #steps-list {
+            width: 100%;
+            max-height: 100%;
+            overflow-y: auto;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        button {
+            margin: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div id="left-container">
+            <p>Merge Sort Visualizer</p>
+            <label for="num-bars">Number of Bars: </label>
+            <br>
+            <input type="number" id="num-bars" min="5" max="50" value="10">
+            <button id="update-bars">Randomize</button>
+            <button id="sort">Sort</button>
+            <br>
+            <a href="/bubble">
+                <button type="button">Bubble</button>
+            </a>
+            <a href="/selection">
+                <button type="button">Selection</button>
+            </a>
+            <a href="/insertion">
+                <button type="button">Insertion</button>
+            </a>
+            <a href="/merge">
+                <button type="button">Merge</button>
+            </a>
+            <a href="/quick">
+                <button type="button">Quick</button>
+            </a>
+        </div>
+        
+
+        <div id="visualizer-container">
+            <div id="visualizer"></div>
+        </div>
+
+        <div id="right-container">
+            <p>Sorting Steps:</p>
+            <button id="toggle-view">Toggle View</button>
+
+            <div id="steps-list"></div>
+        </div>
+    </div>
+
+    <script>
+        const visualizer = document.getElementById("visualizer");
+        const stepsList = document.getElementById("steps-list");
+
+        let isListView = true; // Default view mode
+        let lastSteps = []; // Array to store detailed steps
+        let currentList = []; // Array to store the current state of the list
+
+        // Function to render the list as bars in the visualizer
+        function renderList(list) {
+            visualizer.innerHTML = "";
+            list.forEach(value => {
+                const bar = document.createElement("div");
+                bar.classList.add("bar");
+                bar.style.height = `${value * 10}px`;
+
+                // Create a text element to show the value inside the bar
+                const text = document.createElement("span");
+                text.textContent = value; // Set the text to the bar's value
+                text.classList.add("bar-text");
+
+                bar.appendChild(text); // Append the text to the bar
+                visualizer.appendChild(bar);
+            });
+        }
+
+        // Fetch the current list from the backend
+        async function fetchList() {
+            const response = await fetch("/get_merge_list");
+            const list = await response.json();
+            currentList = list;
+            renderList(list);
+        }
+
+        // Handle the randomization of the list when the button is clicked
+        document.getElementById("update-bars").addEventListener("click", async () => {
+            const numBars = document.getElementById("num-bars").value;
+            const response = await fetch("/randomize_merge", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ num_rectangles: parseInt(numBars), min_value: 1, max_value: 20 })
+            });
+            const newList = await response.json();
+            currentList = newList;
+            renderList(newList);
+            stepsList.innerHTML = ""; // Clear steps when randomizing
+            lastSteps = []; // Reset steps log
+        });
+
+        // Function to animate the merge sort step-by-step
+        async function mergeSortAnimation() {
+            stepsList.innerHTML = ""; // Clear previous steps
+            lastSteps = []; // Reset steps log
+
+            // Perform the merge sort and visualize the process
+            await mergeSort(currentList);
+
+            // Final step: show the sorted list
+            logStep(`[${currentList.join(", ")}]`);
+            logStep("Sorting complete!");
+        }
+
+        // Recursive merge sort function
+        async function mergeSort(list) {
+            if (list.length <= 1) return list;
+
+            // Split the list into two halves
+            const mid = Math.floor(list.length / 2);
+            const left = list.slice(0, mid);
+            const right = list.slice(mid);
+
+            // Log the split list
+            logStep(`[${list.join(", ")}]`);  // Log the current split
+
+            // Sort each half and merge them
+            const sortedLeft = await mergeSort(left);
+            const sortedRight = await mergeSort(right);
+
+            // Merge the sorted halves and log the result
+            return merge(sortedLeft, sortedRight);
+        }
+
+        // Function to merge two sorted arrays
+        function merge(left, right) {
+            const merged = [];
+            let leftIndex = 0;
+            let rightIndex = 0;
+
+            // Merge the two lists
+            while (leftIndex < left.length && rightIndex < right.length) {
+                if (left[leftIndex] < right[rightIndex]) {
+                    merged.push(left[leftIndex]);
+                    leftIndex++;
+                } else {
+                    merged.push(right[rightIndex]);
+                    rightIndex++;
+                }
+            }
+
+            // Append any remaining elements
+            const mergedArray = merged.concat(left.slice(leftIndex), right.slice(rightIndex));
+
+            // Log the merge step
+            logStep(`[${mergedArray.join(", ")}]`);  // Log the merged result
+            return mergedArray;
+        }
+
+        // Function to log each step of the merge sort
+        function logStep(step) {
+            // Save the current state of the list after each step
+            lastSteps.push({ listState: [...currentList], action: step }); // Save both list state and action
+            updateDisplayedSteps();
+        }
+
+        // Function to update and display the steps
+        function updateDisplayedSteps() {
+            stepsList.innerHTML = ""; // Clear current steps
+            if (isListView) {
+                // Display the list of current values at each step
+                lastSteps.forEach(stepObj => {
+                    const listItem = document.createElement("p");
+                    listItem.textContent = `[${stepObj.listState.join(", ")}]`; // Display list state
+                    stepsList.appendChild(listItem);
+                });
+            } else {
+                // Display the detailed steps
+                lastSteps.forEach(stepObj => {
+                    const stepItem = document.createElement("p");
+                    stepItem.textContent = stepObj.action; // Display the swap/comparison action
+                    stepsList.appendChild(stepItem);
+                });
+            }
+            stepsList.scrollTop = stepsList.scrollHeight; // Auto-scroll to the bottom
+        }
+
+        // Sort button event listener to trigger the merge sort
+        document.getElementById("sort").addEventListener("click", mergeSortAnimation);
+
+        // Toggle button to switch between list view and detailed step view
+        const toggleButton = document.getElementById("toggle-view");
+
+        toggleButton.addEventListener("click", () => {
+            isListView = !isListView;
+            updateDisplayedSteps(); // Update the steps based on the current view
+        });
+
+        // Initial fetch to render the list
+        fetchList();
+
+
+    </script>
+</body>
+</html>
